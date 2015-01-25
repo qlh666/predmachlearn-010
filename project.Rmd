@@ -1,0 +1,49 @@
+---
+title: "Course Project of Practical Machine Learning"
+author: "Lianghong"
+date: "Friday, January 23, 2015"
+output: html_document
+---
+
+Executive summary: I built a Linear Discriminant Analysis (LDA) model with 59 of the 159 variables in the dataset. The in sample error is $0.852$ for the training set and the our of sample error is estimated to be $0.856$ given the testing set.
+
+First, I imported the data into an R dataset, and set the strings like "NA" and "#DIV/0!" as missing values in the dataset.
+
+```{r, echo=FALSE}
+options(warn=-1)
+library(caret)
+ds<-read.csv(file="G:\\MOOC\\machine learning\\decks\\pml-training.csv",na.strings=c("NA","#DIV/0!",""))
+ds<-ds[,-1]
+```
+
+Since there were many missing values, especially for some variable, I checked the number of missing values in each variable, and kept those variables with no missing value only. In this way, I eliminated 100 variables and only 59 were kept.
+
+```{r}
+ind<-apply(ds,2,function(x) sum(is.na(x))==0)
+ds<-ds[,ind==T]
+```
+
+Then I divided the data into the training set and the testing set by $7:3$ for cross validation. To ensure anyone can replicate the results, I arbitarily set the seed to $1234$.
+
+```{r}
+set.seed(1234)
+inTrain<-createDataPartition(y=ds$classe,p=0.7,list=F)
+training<-ds[inTrain,]
+testing<-ds[-inTrain,]
+```
+
+I chose the LDA model to train the data. Actually before using the LDA model, I tried a lot of other methods but the performances were not so acceptable in terms of running time and accuracy. Random Forest and Naive Bayes were time consuming, while the decision tree gave poor accuracy. The accuracy in the training set is $0.852$.
+
+```{r}
+modFit<-train(classe~.,data=training,method="lda")
+modFit
+```
+
+I also evaluated the out of sample error by applying the model to the testing set. The accuracy in the testing set is $0.856$, which is acceptable. We also can tell the detailed classification results from the following tables of the predicted values and the actual values.
+
+```{r}
+p<-predict(modFit,newdata=testing)
+table(p,testing$classe)
+sum(p==testing$classe)/dim(testing)[1]
+```
+
